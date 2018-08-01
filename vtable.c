@@ -23,11 +23,21 @@
 #define ADD_X_IMM(a) extract32(a, 10, 12)
 #define IS_STR_X(a) (((a) & 0xfffffc00u) == 0xf9000000u)
 #define IS_MOV_X(a) (((a) & 0xffe00000u) == 0xaa000000u)
+#define IS_ORR_W(a) (((a) & 0x3ff00000u) == 0x32100000u)
+#define IMMR(a) RM(a)
+#define ORR_W_IMM(a) rotr32(~0u >> (~((a) >> 10u) & 31u), IMMR(a))
+#define IS_MOV_W_ZHW(a) (((a) & 0xffe00000u) == 0x52800000u)
+#define MOV_W_IMM(a) extract32(a, 5, 16)
 #define IS_RET(a) ((a) == 0xd65f03c0u)
 
 static inline uint32_t
 extract32(uint32_t value, unsigned start, unsigned length) {
 	return (value >> start) & (~0u >> (32u - length));
+}
+
+static inline uint32_t
+rotr32(uint32_t a, unsigned b) {
+	return (a >> b) | (a << (32u - b));
 }
 
 static inline uint64_t
@@ -128,8 +138,12 @@ do_metaclass_alloc(const struct mach_header_64 *mhp, uint64_t ptr, uint64_t slid
 			x[RD(insn[i])] = ADRP_ADDR(ptr + (i * sizeof(*insn))) + ADRP_IMM(insn[i]);
 		} else if(IS_ADD_X(insn[i])) {
 			x[RD(insn[i])] = x[RN(insn[i])] + ADD_X_IMM(insn[i]);
+		} else if(IS_MOV_W_ZHW(insn[i])) {
+			x[RD(insn[i])] = MOV_W_IMM(insn[i]);
+		} else if(IS_ORR_W(insn[i])) {
+			x[RD(insn[i])] = x[RN(insn[i])] | ORR_W_IMM(insn[i]);
 		} else if(IS_STR_X(insn[i])) {
-			printf(", vtable: 0x%016" PRIx64, x[RD(insn[i])]);
+			printf(", vtable: 0x%016" PRIx64 ", size: 0x%" PRIx64, x[RD(insn[i])], x[0]);
 			break;
 		} else if(IS_RET(insn[i])) {
 			break;
