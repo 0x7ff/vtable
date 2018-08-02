@@ -23,7 +23,7 @@
 #define ADD_X_IMM(a) extract32(a, 10, 12)
 #define IS_STR_X(a) (((a) & 0xfffffc00u) == 0xf9000000u)
 #define IS_MOV_X(a) (((a) & 0xffe00000u) == 0xaa000000u)
-#define IS_ORR_W(a) (((a) & 0x3ff00000u) == 0x32100000u)
+#define IS_ORR_W(a) (((a) & 0xffc00000u) == 0x32000000u)
 #define IMMR(a) RM(a)
 #define ORR_W_IMM(a) rotr32(~0u >> (~((a) >> 10u) & 31u), IMMR(a))
 #define IS_MOV_W_ZHW(a) (((a) & 0xffe00000u) == 0x52800000u)
@@ -37,7 +37,7 @@ extract32(uint32_t value, unsigned start, unsigned length) {
 
 static inline uint32_t
 rotr32(uint32_t a, unsigned b) {
-	return (a >> b) | (a << (32u - b));
+	return (a >> b) | (a << (-b & 31u));
 }
 
 static inline uint64_t
